@@ -53,7 +53,7 @@ if [ ! -f /var/www/html/web/sites/default/default.settings.php ]; then
     --stability stable \
     --no-install \
     --no-interaction \
-    --no-audit \
+    --no-security-blocking \
     -vvv 2>&1 | tee -a "$LOG_FILE"
 
   log "Configuring Drupal package repository inside Opigno project..."
@@ -72,7 +72,7 @@ if [ ! -f /var/www/html/web/sites/default/default.settings.php ]; then
 
   composer install \
     --no-interaction \
-    --no-audit \
+    --no-security-blocking \
     -vvv 2>&1 | tee -a "$LOG_FILE"
 
   log "Installing or confirming Drush..."
@@ -80,7 +80,7 @@ if [ ! -f /var/www/html/web/sites/default/default.settings.php ]; then
   composer require drush/drush:^12 \
     --with-all-dependencies \
     --no-interaction \
-    --no-audit \
+    --no-security-blocking \
     -vvv 2>&1 | tee -a "$LOG_FILE"
 
   log "Copying Opigno code into /var/www/html..."
