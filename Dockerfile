@@ -1,34 +1,58 @@
-services:
-  opigno:
-    build:
-      context: .
-      dockerfile: Dockerfile
+FROM php:8.1-apache
 
-    restart: unless-stopped
+ENV COMPOSER_ALLOW_SUPERUSER=1
+ENV COMPOSER_MEMORY_LIMIT=-1
+ENV APACHE_DOCUMENT_ROOT=/var/www/html/web
 
-    environment:
-      DB_HOST: ${DB_HOST}
-      DB_PORT: ${DB_PORT:-5432}
-      DB_NAME: ${DB_NAME}
-      DB_USER: ${DB_USER}
-      DB_PASS: ${DB_PASS}
+RUN apt-get update && apt-get install -y \
+    git \
+    unzip \
+    curl \
+    ca-certificates \
+    libpq-dev \
+    libpng-dev \
+    libjpeg-dev \
+    libfreetype6-dev \
+    libzip-dev \
+    libicu-dev \
+    libxml2-dev \
+    libonig-dev \
+    libwebp-dev \
+    postgresql-client \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp \
+    && docker-php-ext-install \
+        pdo \
+        pdo_pgsql \
+        pgsql \
+        gd \
+        zip \
+        intl \
+        mbstring \
+        opcache \
+        bcmath \
+        soap \
+        exif \
+    && a2enmod rewrite headers expires \
+    && sed -ri \
+        -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' \
+        /etc/apache2/sites-available/*.conf \
+    && sed -ri \
+        -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' \
+        /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf \
+    && rm -rf /var/lib/apt/lists/*
 
-      ADMIN_USER: ${ADMIN_USER:-admin}
-      ADMIN_PASS: ${ADMIN_PASS}
-      ADMIN_EMAIL: ${ADMIN_EMAIL}
-      SITE_NAME: ${SITE_NAME:-Opigno LMS}
+COPY php.ini /usr/local/etc/php/conf.d/opigno.ini
 
-      OPIGNO_VERSION: ${OPIGNO_VERSION:-3.2.7}
+RUN curl -sS https://getcomposer.org/installer | php -- \
+      --install-dir=/usr/local/bin \
+      --filename=composer \
+    && composer --version
 
-    volumes:
-      - opigno_code:/var/www/html
-      - opigno_files:/var/www/html/web/sites/default/files
-      - opigno_private:/var/www/html/private
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
-    expose:
-      - "80"
+WORKDIR /var/www/html
 
-volumes:
-  opigno_code:
-  opigno_files:
-  opigno_private:
+ENTRYPOINT ["docker-entrypoint.sh"]
+
+CMD ["apache2-foreground"]
