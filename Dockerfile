@@ -31,6 +31,7 @@ RUN apt-get update && apt-get install -y \
         opcache \
         bcmath \
         soap \
+        exif \
     && a2enmod rewrite headers expires \
     && sed -ri \
         -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' \
@@ -51,28 +52,48 @@ RUN curl -sS https://getcomposer.org/installer | php -- \
       --filename=composer \
     && composer --version
 
-# Important:
-# Some Composer versions may fail on audit.ignore syntax.
-# This disables Composer blocking insecure packages during build.
-RUN composer config --global audit.block-insecure false || true
+# Composer global settings for Drupal/Opigno plugins
+RUN composer config --global audit.block-insecure false || true \
+    && composer config --global allow-plugins.composer/installers true \
+    && composer config --global allow-plugins.drupal/core-composer-scaffold true \
+    && composer config --global allow-plugins.cweagans/composer-patches true \
+    && composer config --global allow-plugins.wikimedia/composer-merge-plugin true \
+    && composer config --global allow-plugins.mglaman/composer-drupal-lenient true
 
-# Install Opigno LMS Community 3.2.7
+# Download Opigno project WITHOUT installing dependencies first
 RUN composer create-project opigno/opigno-composer:3.2.7 /tmp/opigno \
       --stability stable \
+      --no-install \
       --no-interaction \
-      --no-progress \
-      -vvv
+      --no-progress
 
-# Copy Opigno project into Apache directory
+# Move project to Apache directory
 RUN cp -a /tmp/opigno/. /var/www/html/ \
     && rm -rf /tmp/opigno
 
-# Install Drush
-RUN cd /var/www/html \
-    && composer require drush/drush:^12 \
+WORKDIR /var/www/html
+
+# Project-level Composer settings
+RUN composer config audit.block-insecure false || true \
+    && composer config allow-plugins.composer/installers true \
+    && composer config allow-plugins.drupal/core-composer-scaffold true \
+    && composer config allow-plugins.cweagans/composer-patches true \
+    && composer config allow-plugins.wikimedia/composer-merge-plugin true \
+    && composer config allow-plugins.mglaman/composer-drupal-lenient true
+
+# Install Opigno dependencies
+RUN composer install \
+      --no-interaction \
+      --no-progress \
+      --no-audit \
+      --with-all-dependencies
+
+# Ensure Drush is available
+RUN composer require drush/drush:^12 \
       --with-all-dependencies \
       --no-interaction \
-      --no-progress
+      --no-progress \
+      --no-audit
 
 # Copy startup script
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
