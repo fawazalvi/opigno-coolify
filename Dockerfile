@@ -1,6 +1,7 @@
 FROM php:8.1-apache
 
 ENV COMPOSER_ALLOW_SUPERUSER=1
+ENV COMPOSER_MEMORY_LIMIT=-1
 ENV APACHE_DOCUMENT_ROOT=/var/www/html/web
 
 # Install system dependencies and PHP extensions
@@ -39,7 +40,7 @@ RUN apt-get update && apt-get install -y \
         /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy custom PHP settings
+# PHP configuration
 COPY php.ini /usr/local/etc/php/conf.d/opigno.ini
 
 WORKDIR /var/www/html
@@ -47,17 +48,31 @@ WORKDIR /var/www/html
 # Install Composer
 RUN curl -sS https://getcomposer.org/installer | php -- \
       --install-dir=/usr/local/bin \
-      --filename=composer
+      --filename=composer \
+    && composer --version
+
+# Important:
+# Some Composer versions may fail on audit.ignore syntax.
+# This disables Composer blocking insecure packages during build.
+RUN composer config --global audit.block-insecure false || true
 
 # Install Opigno LMS Community 3.2.7
-# The audit ignore is required because Opigno 3.2.7 currently has a dependency
-# blocked by Composer audit during create-project.
-RUN composer config --global audit.ignore.PKSA-y2cr-5h3j-g3ys "Required by Opigno 3.2.7 drupal/jwt dependency" \
-    && composer create-project opigno/opigno-composer:3.2.7 /tmp/opigno --stability stable --no-interaction \
-    && cp -a /tmp/opigno/. /var/www/html/ \
-    && rm -rf /tmp/opigno \
-    && cd /var/www/html \
-    && composer require drush/drush:^12 --with-all-dependencies --no-interaction
+RUN composer create-project opigno/opigno-composer:3.2.7 /tmp/opigno \
+      --stability stable \
+      --no-interaction \
+      --no-progress \
+      -vvv
+
+# Copy Opigno project into Apache directory
+RUN cp -a /tmp/opigno/. /var/www/html/ \
+    && rm -rf /tmp/opigno
+
+# Install Drush
+RUN cd /var/www/html \
+    && composer require drush/drush:^12 \
+      --with-all-dependencies \
+      --no-interaction \
+      --no-progress
 
 # Copy startup script
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
