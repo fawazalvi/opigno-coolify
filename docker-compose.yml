@@ -21,14 +21,14 @@ services:
       OPIGNO_VERSION: ${OPIGNO_VERSION:-3.2.7}
 
     volumes:
-      - opigno_code_v2:/var/www/html
-      - opigno_files_v2:/var/www/html/web/sites/default/files
-      - opigno_private_v2:/var/www/html/private
+      - opigno_code_v3:/var/www/html
+      - opigno_files_v3:/var/www/html/web/sites/default/files
+      - opigno_private_v3:/var/www/html/private
 
     expose:
       - "80"
 
 volumes:
-  opigno_code_v2:
-  opigno_files_v2:
-  opigno_private_v2:
+  opigno_code_v3:
+  opigno_files_v3:
+  opigno_private_v3:
