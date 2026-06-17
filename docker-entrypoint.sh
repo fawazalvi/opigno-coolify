@@ -22,18 +22,19 @@ export COMPOSER_PROCESS_TIMEOUT=0
 
 mkdir -p /var/www/html
 
-# Check whether Drupal/Opigno code is really complete
 if [ ! -f /var/www/html/web/sites/default/default.settings.php ]; then
   log "Drupal/Opigno code is missing or incomplete."
-  log "Cleaning /var/www/html except persistent mount folders may be recreated..."
+  log "Cleaning existing partial code from /var/www/html..."
 
   rm -rf /var/www/html/* /var/www/html/.[!.]* /var/www/html/..?* || true
   rm -rf /tmp/opigno
 
-  log "Installing Opigno LMS ${OPIGNO_VERSION:-3.2.7} through Composer..."
-
+  log "Composer version:"
   composer --version 2>&1 | tee -a "$LOG_FILE"
 
+  log "Applying Composer global configuration..."
+
+  composer config --global repositories.drupal composer https://packages.drupal.org/8 || true
   composer config --global audit.block-insecure false || true
   composer config --global allow-plugins.composer/installers true || true
   composer config --global allow-plugins.drupal/core-composer-scaffold true || true
@@ -41,7 +42,10 @@ if [ ! -f /var/www/html/web/sites/default/default.settings.php ]; then
   composer config --global allow-plugins.wikimedia/composer-merge-plugin true || true
   composer config --global allow-plugins.mglaman/composer-drupal-lenient true || true
 
+  log "Installing Opigno LMS ${OPIGNO_VERSION:-3.2.7} through Composer..."
+
   composer create-project opigno/opigno-composer:"${OPIGNO_VERSION:-3.2.7}" /tmp/opigno \
+    --repository='{"type":"composer","url":"https://packages.drupal.org/8"}' \
     --stability stable \
     --no-interaction \
     --no-audit \
@@ -54,7 +58,17 @@ if [ ! -f /var/www/html/web/sites/default/default.settings.php ]; then
 
   cd /var/www/html
 
-  log "Installing/confirming Drush..."
+  log "Applying Composer project configuration..."
+
+  composer config repositories.drupal composer https://packages.drupal.org/8 || true
+  composer config audit.block-insecure false || true
+  composer config allow-plugins.composer/installers true || true
+  composer config allow-plugins.drupal/core-composer-scaffold true || true
+  composer config allow-plugins.cweagans/composer-patches true || true
+  composer config allow-plugins.wikimedia/composer-merge-plugin true || true
+  composer config allow-plugins.mglaman/composer-drupal-lenient true || true
+
+  log "Installing or confirming Drush..."
 
   composer require drush/drush:^12 \
     --with-all-dependencies \
@@ -74,7 +88,7 @@ cd /var/www/html
 if [ ! -f web/sites/default/default.settings.php ]; then
   log "ERROR: default.settings.php still not found after Composer install."
   log "Directory listing:"
-  find /var/www/html -maxdepth 4 -type d | sort | tee -a "$LOG_FILE"
+  find /var/www/html -maxdepth 5 -type d | sort | tee -a "$LOG_FILE"
   exit 1
 fi
 
@@ -109,6 +123,8 @@ if [ ! -f web/sites/default/files/.opigno_installed ]; then
     --site-mail="${ADMIN_EMAIL}" \
     --site-name="${SITE_NAME}" \
     -y -vvv 2>&1 | tee -a "$LOG_FILE"
+
+  log "Drush site install completed."
 
   touch web/sites/default/files/.opigno_installed
 
