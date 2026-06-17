@@ -1,0 +1,30 @@
+services:
+  opigno:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    restart: unless-stopped
+
+    environment:
+      DB_HOST: ${DB_HOST:?DB_HOST is required}
+      DB_PORT: ${DB_PORT:-5432}
+      DB_NAME: ${DB_NAME:?DB_NAME is required}
+      DB_USER: ${DB_USER:?DB_USER is required}
+      DB_PASS: ${DB_PASS:?DB_PASS is required}
+
+      ADMIN_USER: ${ADMIN_USER:-admin}
+      ADMIN_PASS: ${ADMIN_PASS:?ADMIN_PASS is required}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:?ADMIN_EMAIL is required}
+      SITE_NAME: ${SITE_NAME:-Opigno LMS}
+
+    volumes:
+      - opigno_files:/var/www/html/web/sites/default/files
+      - opigno_private:/var/www/html/private
+
+    expose:
+      - "80"
+
+volumes:
+  opigno_files:
+  opigno_private:
