@@ -4,11 +4,13 @@ services:
       context: .
       dockerfile: Dockerfile
 
-    restart: unless-stopped
+    # Temporary for debugging.
+    # This stops Coolify from restarting the container again and again.
+    restart: "no"
 
     environment:
       DB_HOST: ${DB_HOST}
-      DB_PORT: ${DB_PORT:-5432}
+      DB_PORT: 5432}
       DB_NAME: ${DB_NAME}
       DB_USER: ${DB_USER}
       DB_PASS: ${DB_PASS}
