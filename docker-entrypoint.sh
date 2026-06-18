@@ -75,7 +75,7 @@ if [ ! -f /var/www/html/web/sites/default/default.settings.php ]; then
   composer config allow-plugins.wikimedia/composer-merge-plugin true || true
   composer config allow-plugins.mglaman/composer-drupal-lenient true || true
 
-  log "Patching composer.json to force Drupal 10 and allow Opigno dependencies..."
+  log "Patching composer.json to force Drupal 10.2 and resolve Opigno dependencies..."
 
   php -r '
   $file = "composer.json";
@@ -85,31 +85,34 @@ if [ ! -f /var/www/html/web/sites/default/default.settings.php ]; then
     $json["require"] = [];
   }
 
-  // Pin Drupal 10 recommended packages.
-  $json["require"]["drupal/core-recommended"] = "^10.0";
-  $json["require"]["drupal/core-composer-scaffold"] = "^10.0";
-  $json["require"]["drupal/core-project-message"] = "^10.0";
+  // Pin Drupal to 10.2 line.
+  // drupal/h5p 2.x requires Drupal ^10.2 || ^11, while PHP 8.1 rules out Drupal 11.
+  $json["require"]["drupal/core-recommended"] = "10.2.*";
+  $json["require"]["drupal/core-composer-scaffold"] = "10.2.*";
+  $json["require"]["drupal/core-project-message"] = "10.2.*";
 
   // Opigno 3.2.7 is Drupal 10 based.
   $json["require"]["opigno/opigno_lms"] = "~3.2.0";
 
   // Opigno required contrib/dev dependencies.
-  // Calendar is pinned to alpha2 because Opigno bundled patch fails on newer Calendar versions.
-  $json["require"]["drupal/calendar"] = "1.0.0-alpha2";
+  // Do NOT pin calendar to alpha2: alpha2 requires Drupal 8.
+  $json["require"]["drupal/calendar"] = "^1.0@alpha";
   $json["require"]["drupal/color"] = "^1.0";
   $json["require"]["furf/jquery-ui-touch-punch"] = "dev-master";
 
-  // H5P PHP libraries required by Drupal h5p module.
-  // Keep h5p-core below 1.28 because 1.28 adds resetHubOrganizationData()
-  // which current Drupal h5p module class does not implement.
+  // H5P module and PHP libraries.
+  // h5p module alpha5 supports Drupal ^10.2 || ^11.
+  // h5p-core must remain below 1.28 to avoid resetHubOrganizationData() interface mismatch.
+  $json["require"]["drupal/h5p"] = "2.0.0-alpha5";
   $json["require"]["h5p/h5p-core"] = ">=1.26 <1.28";
   $json["require"]["h5p/h5p-editor"] = "^1.25";
 
-  // These modules exist in Drupal core / create conflict as contrib packages.
   if (!isset($json["replace"])) {
     $json["replace"] = [];
   }
 
+  // Satisfy Opigno forum/history dependencies without installing contrib packages
+  // that conflict with Drupal core replacement rules.
   $json["replace"]["drupal/forum"] = "*";
   $json["replace"]["drupal/history"] = "*";
 
@@ -117,7 +120,16 @@ if [ ! -f /var/www/html/web/sites/default/default.settings.php ]; then
   unset($json["replace"]["h5p/h5p-core"]);
   unset($json["replace"]["h5p/h5p-editor"]);
 
-  // Opigno 3.2.7 has alpha and dev/master dependencies.
+  // Remove Opigno bundled Calendar patch because it fails against Drupal 10-compatible Calendar code.
+  if (isset($json["extra"]["patches"]["drupal/calendar"])) {
+    unset($json["extra"]["patches"]["drupal/calendar"]);
+  }
+
+  // Clean empty patches array if needed.
+  if (isset($json["extra"]["patches"]) && empty($json["extra"]["patches"])) {
+    unset($json["extra"]["patches"]);
+  }
+
   $json["minimum-stability"] = "dev";
   $json["prefer-stable"] = true;
 
@@ -151,6 +163,11 @@ if [ ! -f /var/www/html/web/sites/default/default.settings.php ]; then
     if (str_contains($k, "drupal/") || str_contains($k, "h5p/")) {
       echo "  $k: $v\n";
     }
+  }
+
+  echo "patches:\n";
+  foreach (($json["extra"]["patches"] ?? []) as $package => $patches) {
+    echo "  $package\n";
   }
   ' 2>&1 | tee -a "$LOG_FILE"
 
