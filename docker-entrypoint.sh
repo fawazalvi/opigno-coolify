@@ -99,8 +99,8 @@ if [ ! -f /var/www/html/web/sites/default/default.settings.php ]; then
   $json["require"]["drupal/calendar"] = "^1.0@alpha";
   $json["require"]["drupal/color"] = "^1.0";
 
-  // Pin private_message to 3.x because newer 4.x changed/removed the widget
-  // expected by Opigno private_message_thread default config.
+  // Pin private_message to 3.x because newer 4.x changed/refactored
+  // the widget expected by Opigno private_message_thread default config.
   $json["require"]["drupal/private_message"] = "^3.0";
 
   $json["require"]["furf/jquery-ui-touch-punch"] = "dev-master";
@@ -187,6 +187,30 @@ if [ ! -f /var/www/html/web/sites/default/default.settings.php ]; then
   log "Regenerating optimized Composer autoload files..."
 
   composer dump-autoload -o 2>&1 | tee -a "$LOG_FILE"
+
+  log "Patching private_message config to use Drupal core autocomplete widget..."
+
+  if [ -d /tmp/opigno/web/modules/contrib/private_message ]; then
+    find /tmp/opigno/web/modules/contrib/private_message \
+      \( -path "*/config/install/*.yml" -o -path "*/config/optional/*.yml" \) \
+      -type f \
+      -exec grep -l "private_message_thread_member_widget" {} \; \
+      | while read -r config_file; do
+          log "Patching ${config_file}"
+          sed -i 's/private_message_thread_member_widget/entity_reference_autocomplete/g' "$config_file"
+        done
+
+    log "Checking private_message widget references after patch..."
+
+    if grep -R "private_message_thread_member_widget" /tmp/opigno/web/modules/contrib/private_message 2>/dev/null; then
+      log "ERROR: private_message_thread_member_widget still found in private_message config."
+      exit 1
+    else
+      log "private_message config patch completed."
+    fi
+  else
+    log "WARNING: private_message module directory not found. Skipping private_message config patch."
+  fi
 
   log "Verifying H5PFrameworkInterface availability..."
 
