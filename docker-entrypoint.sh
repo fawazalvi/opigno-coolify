@@ -63,8 +63,8 @@ if [ ! -f /var/www/html/web/sites/default/default.settings.php ]; then
 
   composer config repositories.drupal composer https://packages.drupal.org/8 || true
 
-  # Opigno requires at least one alpha package: drupal/calendar ^1.0@alpha.
-  composer config minimum-stability alpha || true
+  # Opigno requires alpha and dev/master dependencies.
+  composer config minimum-stability dev || true
   composer config prefer-stable true || true
 
   composer config audit.block-insecure false || true
@@ -75,7 +75,7 @@ if [ ! -f /var/www/html/web/sites/default/default.settings.php ]; then
   composer config allow-plugins.wikimedia/composer-merge-plugin true || true
   composer config allow-plugins.mglaman/composer-drupal-lenient true || true
 
-  log "Patching composer.json to force Drupal 10 and prevent contrib forum/history conflicts..."
+  log "Patching composer.json to force Drupal 10 and allow Opigno dependencies..."
 
   php -r '
   $file = "composer.json";
@@ -93,11 +93,10 @@ if [ ! -f /var/www/html/web/sites/default/default.settings.php ]; then
   // Opigno 3.2.7 is Drupal 10 based.
   $json["require"]["opigno/opigno_lms"] = "~3.2.0";
 
-  // Opigno requires alpha calendar package.
+  // Opigno required contrib/dev dependencies.
   $json["require"]["drupal/calendar"] = "^1.0@alpha";
-
-  // Keep Drupal color as contrib because Opigno requires it.
   $json["require"]["drupal/color"] = "^1.0";
+  $json["require"]["furf/jquery-ui-touch-punch"] = "dev-master";
 
   // These modules exist in Drupal core / create conflict as contrib packages.
   if (!isset($json["replace"])) {
@@ -107,8 +106,8 @@ if [ ! -f /var/www/html/web/sites/default/default.settings.php ]; then
   $json["replace"]["drupal/forum"] = "*";
   $json["replace"]["drupal/history"] = "*";
 
-  // Allow alpha packages required by Opigno, but prefer stable where available.
-  $json["minimum-stability"] = "alpha";
+  // Opigno 3.2.7 has alpha and dev/master dependencies.
+  $json["minimum-stability"] = "dev";
   $json["prefer-stable"] = true;
 
   file_put_contents(
@@ -126,7 +125,7 @@ if [ ! -f /var/www/html/web/sites/default/default.settings.php ]; then
 
   echo "require:\n";
   foreach ($json["require"] as $k => $v) {
-    if (str_contains($k, "drupal/") || str_contains($k, "opigno/")) {
+    if (str_contains($k, "drupal/") || str_contains($k, "opigno/") || str_contains($k, "furf/")) {
       echo "  $k: $v\n";
     }
   }
