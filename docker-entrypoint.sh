@@ -110,33 +110,9 @@ if [ ! -f /var/www/html/web/sites/default/default.settings.php ]; then
   $json["replace"]["drupal/forum"] = "*";
   $json["replace"]["drupal/history"] = "*";
 
-  // Make sure H5P global interfaces/classes are loaded by Composer.
-  if (!isset($json["autoload"])) {
-    $json["autoload"] = [];
-  }
-
-  if (!isset($json["autoload"]["files"])) {
-    $json["autoload"]["files"] = [];
-  }
-
-  foreach ([
-    "vendor/h5p/h5p-core/h5p.classes.php",
-    "vendor/h5p/h5p-core/h5p-development.class.php",
-    "vendor/h5p/h5p-editor/h5peditor.class.php"
-  ] as $fileToAutoload) {
-    if (!in_array($fileToAutoload, $json["autoload"]["files"], true)) {
-      $json["autoload"]["files"][] = $fileToAutoload;
-    }
-  }
-
-  // Ensure these libraries are not accidentally marked as replaced.
-  if (isset($json["replace"]["h5p/h5p-core"])) {
-    unset($json["replace"]["h5p/h5p-core"]);
-  }
-
-  if (isset($json["replace"]["h5p/h5p-editor"])) {
-    unset($json["replace"]["h5p/h5p-editor"]);
-  }
+  // Ensure H5P libraries are not accidentally marked as replaced.
+  unset($json["replace"]["h5p/h5p-core"]);
+  unset($json["replace"]["h5p/h5p-editor"]);
 
   // Opigno 3.2.7 has alpha and dev/master dependencies.
   $json["minimum-stability"] = "dev";
@@ -165,11 +141,6 @@ if [ ! -f /var/www/html/web/sites/default/default.settings.php ]; then
     ) {
       echo "  $k: $v\n";
     }
-  }
-
-  echo "autoload files:\n";
-  foreach (($json["autoload"]["files"] ?? []) as $file) {
-    echo "  $file\n";
   }
 
   echo "replace:\n";
