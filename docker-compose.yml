@@ -6,7 +6,7 @@ services:
 
     # Keep this as "no" until Opigno installation completes successfully.
     # After success, change back to: unless-stopped
-    restart: "no"
+    restart: unless-stopped
 
     environment:
       DB_HOST: ${DB_HOST}
