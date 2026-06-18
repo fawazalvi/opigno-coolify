@@ -68,9 +68,10 @@ if [ ! -f /var/www/html/web/sites/default/default.settings.php ]; then
   composer config allow-plugins.wikimedia/composer-merge-plugin true || true
   composer config allow-plugins.mglaman/composer-drupal-lenient true || true
 
-  log "Installing Opigno/Drupal dependencies..."
+  log "Updating Opigno/Drupal dependencies for PHP 8.1 compatibility..."
 
-  composer install \
+  composer update \
+    --with-all-dependencies \
     --no-interaction \
     --no-security-blocking \
     -vvv 2>&1 | tee -a "$LOG_FILE"
@@ -78,7 +79,7 @@ if [ ! -f /var/www/html/web/sites/default/default.settings.php ]; then
   log "Installing or confirming Drush..."
 
   composer require drush/drush:^12 \
-    --with-all-dependencies \
+    --update-with-all-dependencies \
     --no-interaction \
     --no-security-blocking \
     -vvv 2>&1 | tee -a "$LOG_FILE"
