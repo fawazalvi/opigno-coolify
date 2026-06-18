@@ -94,7 +94,8 @@ if [ ! -f /var/www/html/web/sites/default/default.settings.php ]; then
   $json["require"]["opigno/opigno_lms"] = "~3.2.0";
 
   // Opigno required contrib/dev dependencies.
-  $json["require"]["drupal/calendar"] = "^1.0@alpha";
+  // Calendar is pinned to alpha2 because Opigno bundled patch fails on newer Calendar versions.
+  $json["require"]["drupal/calendar"] = "1.0.0-alpha2";
   $json["require"]["drupal/color"] = "^1.0";
   $json["require"]["furf/jquery-ui-touch-punch"] = "dev-master";
 
