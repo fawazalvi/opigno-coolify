@@ -200,13 +200,17 @@ if [ ! -f /var/www/html/web/sites/default/default.settings.php ]; then
           sed -i 's/private_message_thread_member_widget/entity_reference_autocomplete/g' "$config_file"
         done
 
-    log "Checking private_message widget references after patch..."
+    log "Checking private_message config YAML references after patch..."
 
-    if grep -R "private_message_thread_member_widget" /tmp/opigno/web/modules/contrib/private_message 2>/dev/null; then
-      log "ERROR: private_message_thread_member_widget still found in private_message config."
+    if find /tmp/opigno/web/modules/contrib/private_message \
+      \( -path "*/config/install/*.yml" -o -path "*/config/optional/*.yml" \) \
+      -type f \
+      -exec grep -l "private_message_thread_member_widget" {} \; \
+      | grep -q .; then
+      log "ERROR: private_message_thread_member_widget still found in install/optional config YAML."
       exit 1
     else
-      log "private_message config patch completed."
+      log "private_message config YAML patch completed."
     fi
   else
     log "WARNING: private_message module directory not found. Skipping private_message config patch."
