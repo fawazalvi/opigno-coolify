@@ -56,9 +56,9 @@ if [ ! -f /var/www/html/web/sites/default/default.settings.php ]; then
     --no-security-blocking \
     -vvv 2>&1 | tee -a "$LOG_FILE"
 
-  log "Configuring Drupal package repository inside Opigno project..."
-
   cd /tmp/opigno
+
+  log "Configuring Drupal package repository inside Opigno project..."
 
   composer config repositories.drupal composer https://packages.drupal.org/8 || true
   composer config audit.block-insecure false || true
@@ -68,21 +68,29 @@ if [ ! -f /var/www/html/web/sites/default/default.settings.php ]; then
   composer config allow-plugins.wikimedia/composer-merge-plugin true || true
   composer config allow-plugins.mglaman/composer-drupal-lenient true || true
 
-  log "Updating Opigno/Drupal dependencies for PHP 8.1 compatibility..."
+  log "Installing Opigno dependencies from composer.lock..."
+  log "Using --ignore-platform-req=php to avoid old transitive PHP constraints while keeping Opigno locked package versions."
 
-  composer update \
-    --with-all-dependencies \
+  composer install \
     --no-interaction \
     --no-security-blocking \
+    --ignore-platform-req=php \
     -vvv 2>&1 | tee -a "$LOG_FILE"
 
-  log "Installing or confirming Drush..."
+  log "Checking Drush availability..."
 
-  composer require drush/drush:^12 \
-    --update-with-all-dependencies \
-    --no-interaction \
-    --no-security-blocking \
-    -vvv 2>&1 | tee -a "$LOG_FILE"
+  if [ ! -x /tmp/opigno/vendor/bin/drush ]; then
+    log "Drush not found. Installing Drush with PHP platform check ignored..."
+
+    composer require drush/drush:^12 \
+      --with-all-dependencies \
+      --no-interaction \
+      --no-security-blocking \
+      --ignore-platform-req=php \
+      -vvv 2>&1 | tee -a "$LOG_FILE"
+  else
+    log "Drush already available."
+  fi
 
   log "Copying Opigno code into /var/www/html..."
 
