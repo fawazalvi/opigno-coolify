@@ -98,6 +98,11 @@ if [ ! -f /var/www/html/web/sites/default/default.settings.php ]; then
   // Do NOT pin calendar to alpha2: alpha2 requires Drupal 8.
   $json["require"]["drupal/calendar"] = "^1.0@alpha";
   $json["require"]["drupal/color"] = "^1.0";
+
+  // Pin private_message to 3.x because newer 4.x changed/removed the widget
+  // expected by Opigno private_message_thread default config.
+  $json["require"]["drupal/private_message"] = "^3.0";
+
   $json["require"]["furf/jquery-ui-touch-punch"] = "dev-master";
 
   // H5P module and PHP libraries.
