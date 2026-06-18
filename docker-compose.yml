@@ -23,9 +23,9 @@ services:
       OPIGNO_VERSION: ${OPIGNO_VERSION:-3.2.7}
 
     volumes:
-      - opigno_code_v9:/var/www/html
-      - opigno_files_v9:/var/www/html/web/sites/default/files
-      - opigno_private_v9:/var/www/html/private
+      - opigno_code_v10:/var/www/html
+      - opigno_files_v10:/var/www/html/web/sites/default/files
+      - opigno_private_v10:/var/www/html/private
 
     expose:
       - "80"
@@ -35,9 +35,9 @@ services:
       - opigno_network
 
 volumes:
-  opigno_code_v9:
-  opigno_files_v9:
-  opigno_private_v9:
+  opigno_code_v10:
+  opigno_files_v10:
+  opigno_private_v10:
 
 networks:
   coolify:
