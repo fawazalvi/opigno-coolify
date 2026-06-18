@@ -1,53 +1,50 @@
-```yaml
 services:
-  opigno:
-    build:
-      context: .
-      dockerfile: Dockerfile
+opigno:
+build:
+context: .
+dockerfile: Dockerfile
 
-    # Keep this as "no" during clean installation.
-    # After confirming the site works, change to: unless-stopped
-    restart: "no"
+```
+restart: "no"
 
-    environment:
-      DB_HOST: ${DB_HOST}
-      DB_PORT: ${DB_PORT:-5432}
-      DB_NAME: ${DB_NAME}
-      DB_USER: ${DB_USER}
-      DB_PASS: ${DB_PASS}
+environment:
+  DB_HOST: ${DB_HOST}
+  DB_PORT: ${DB_PORT:-5432}
+  DB_NAME: ${DB_NAME}
+  DB_USER: ${DB_USER}
+  DB_PASS: ${DB_PASS}
 
-      ADMIN_USER: ${ADMIN_USER:-admin}
-      ADMIN_PASS: ${ADMIN_PASS}
-      ADMIN_EMAIL: ${ADMIN_EMAIL}
-      SITE_NAME: ${SITE_NAME:-Opigno LMS}
+  ADMIN_USER: ${ADMIN_USER:-admin}
+  ADMIN_PASS: ${ADMIN_PASS}
+  ADMIN_EMAIL: ${ADMIN_EMAIL}
+  SITE_NAME: ${SITE_NAME:-Opigno LMS}
 
-      OPIGNO_VERSION: ${OPIGNO_VERSION:-3.2.7}
-
-      TRUSTED_HOST: ${TRUSTED_HOST:-lms.global-hrm.net}
-
-    volumes:
-      - opigno_code_v11:/var/www/html
-      - opigno_files_v11:/var/www/html/web/sites/default/files
-      - opigno_private_v11:/var/www/html/private
-
-    expose:
-      - "80"
-  
-    networks:
-      - coolify
-      - opigno_network
+  OPIGNO_VERSION: ${OPIGNO_VERSION:-3.2.7}
+  TRUSTED_HOST: ${TRUSTED_HOST:-lms.global-hrm.net}
 
 volumes:
-  opigno_code_v11:
-  opigno_files_v11:
-  opigno_private_v11:
+  - opigno_code_v11:/var/www/html
+  - opigno_files_v11:/var/www/html/web/sites/default/files
+  - opigno_private_v11:/var/www/html/private
+
+expose:
+  - "80"
 
 networks:
-  coolify:
-    external: true
-    name: coolify
-
-  opigno_network:
-    external: true
-    name: uevbx1exk5pvg4raa7s21qum
+  - coolify
+  - opigno_network
 ```
+
+volumes:
+opigno_code_v11:
+opigno_files_v11:
+opigno_private_v11:
+
+networks:
+coolify:
+external: true
+name: coolify
+
+opigno_network:
+external: true
+name: uevbx1exk5pvg4raa7s21qum
