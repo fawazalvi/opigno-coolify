@@ -4,13 +4,13 @@ services:
       context: .
       dockerfile: Dockerfile
 
-    # Temporary for debugging.
-    # This stops Coolify from restarting the container again and again.
+    # Keep this as "no" until installation completes successfully.
+    # After success, change back to: unless-stopped
     restart: "no"
 
     environment:
       DB_HOST: ${DB_HOST}
-      DB_PORT: ${DB_PORT}
+      DB_PORT: ${DB_PORT:-5432}
       DB_NAME: ${DB_NAME}
       DB_USER: ${DB_USER}
       DB_PASS: ${DB_PASS}
@@ -30,7 +30,20 @@ services:
     expose:
       - "80"
 
+    networks:
+      - opigno_app_network
+      - coolify
+
 volumes:
   opigno_code_v3:
   opigno_files_v3:
   opigno_private_v3:
+
+networks:
+  opigno_app_network:
+    external: true
+    name: uevbx1exk5pvg4raa7s21qum
+
+  coolify:
+    external: true
+    name: coolify
