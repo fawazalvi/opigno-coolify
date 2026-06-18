@@ -43,6 +43,7 @@ if [ ! -f /var/www/html/web/sites/default/default.settings.php ]; then
   composer config --global audit.block-insecure false || true
   composer config --global allow-plugins.composer/installers true || true
   composer config --global allow-plugins.drupal/core-composer-scaffold true || true
+  composer config --global allow-plugins.drupal/core-project-message true || true
   composer config --global allow-plugins.cweagans/composer-patches true || true
   composer config --global allow-plugins.wikimedia/composer-merge-plugin true || true
   composer config --global allow-plugins.mglaman/composer-drupal-lenient true || true
@@ -61,32 +62,88 @@ if [ ! -f /var/www/html/web/sites/default/default.settings.php ]; then
   log "Configuring Drupal package repository inside Opigno project..."
 
   composer config repositories.drupal composer https://packages.drupal.org/8 || true
+  composer config minimum-stability stable || true
+  composer config prefer-stable true || true
+
   composer config audit.block-insecure false || true
   composer config allow-plugins.composer/installers true || true
   composer config allow-plugins.drupal/core-composer-scaffold true || true
+  composer config allow-plugins.drupal/core-project-message true || true
   composer config allow-plugins.cweagans/composer-patches true || true
   composer config allow-plugins.wikimedia/composer-merge-plugin true || true
   composer config allow-plugins.mglaman/composer-drupal-lenient true || true
 
-  log "Installing Opigno dependencies from composer.lock..."
-  log "Using --ignore-platform-req=php to avoid old transitive PHP constraints while keeping Opigno locked package versions."
+  log "Patching composer.json to force Drupal 10 and prevent contrib forum/history conflicts..."
 
-  composer install \
+  php -r '
+  $file = "composer.json";
+  $json = json_decode(file_get_contents($file), true);
+
+  if (!isset($json["require"])) {
+    $json["require"] = [];
+  }
+
+  // Pin Drupal 10 recommended packages.
+  $json["require"]["drupal/core-recommended"] = "^10.0";
+  $json["require"]["drupal/core-composer-scaffold"] = "^10.0";
+  $json["require"]["drupal/core-project-message"] = "^10.0";
+
+  // Opigno 3.2.7 is Drupal 10 based.
+  $json["require"]["opigno/opigno_lms"] = "~3.2.0";
+
+  // These modules exist in Drupal 10 core.
+  // This prevents Composer from downloading contrib drupal/forum and drupal/history,
+  // which causes Drupal 8/9/11 resolution conflicts.
+  if (!isset($json["replace"])) {
+    $json["replace"] = [];
+  }
+
+  $json["replace"]["drupal/forum"] = "*";
+  $json["replace"]["drupal/history"] = "*";
+
+  // Keep Drupal color as contrib because Opigno requires it.
+  $json["require"]["drupal/color"] = "^1.0";
+
+  file_put_contents(
+    $file,
+    json_encode($json, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . PHP_EOL
+  );
+  '
+
+  log "Current composer.json relevant entries:"
+  php -r '
+  $json = json_decode(file_get_contents("composer.json"), true);
+  echo "require:\n";
+  foreach ($json["require"] as $k => $v) {
+    if (str_contains($k, "drupal/") || str_contains($k, "opigno/")) {
+      echo "  $k: $v\n";
+    }
+  }
+  echo "replace:\n";
+  foreach (($json["replace"] ?? []) as $k => $v) {
+    if (str_contains($k, "drupal/")) {
+      echo "  $k: $v\n";
+    }
+  }
+  ' 2>&1 | tee -a "$LOG_FILE"
+
+  log "Resolving and installing Opigno/Drupal dependencies..."
+
+  composer update \
+    --with-all-dependencies \
     --no-interaction \
     --no-security-blocking \
-    --ignore-platform-req=php \
     -vvv 2>&1 | tee -a "$LOG_FILE"
 
   log "Checking Drush availability..."
 
   if [ ! -x /tmp/opigno/vendor/bin/drush ]; then
-    log "Drush not found. Installing Drush with PHP platform check ignored..."
+    log "Drush not found. Installing Drush..."
 
     composer require drush/drush:^12 \
       --with-all-dependencies \
       --no-interaction \
       --no-security-blocking \
-      --ignore-platform-req=php \
       -vvv 2>&1 | tee -a "$LOG_FILE"
   else
     log "Drush already available."
