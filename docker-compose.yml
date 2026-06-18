@@ -32,7 +32,7 @@ services:
 
     expose:
       - "80"
-
+  
     networks:
       - coolify
       - opigno_network
