@@ -98,6 +98,10 @@ if [ ! -f /var/www/html/web/sites/default/default.settings.php ]; then
   $json["require"]["drupal/color"] = "^1.0";
   $json["require"]["furf/jquery-ui-touch-punch"] = "dev-master";
 
+  // H5P PHP libraries required by Drupal h5p module.
+  $json["require"]["h5p/h5p-core"] = "^1.26";
+  $json["require"]["h5p/h5p-editor"] = "^1.25";
+
   // These modules exist in Drupal core / create conflict as contrib packages.
   if (!isset($json["replace"])) {
     $json["replace"] = [];
@@ -125,7 +129,12 @@ if [ ! -f /var/www/html/web/sites/default/default.settings.php ]; then
 
   echo "require:\n";
   foreach ($json["require"] as $k => $v) {
-    if (str_contains($k, "drupal/") || str_contains($k, "opigno/") || str_contains($k, "furf/")) {
+    if (
+      str_contains($k, "drupal/") ||
+      str_contains($k, "opigno/") ||
+      str_contains($k, "furf/") ||
+      str_contains($k, "h5p/")
+    ) {
       echo "  $k: $v\n";
     }
   }
