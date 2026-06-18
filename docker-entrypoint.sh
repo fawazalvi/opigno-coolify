@@ -183,9 +183,18 @@ if [ ! -f web/sites/default/default.settings.php ]; then
   exit 1
 fi
 
-mkdir -p web/sites/default/files private
+log "Preparing Drupal writable directories..."
+
+mkdir -p web/sites/default/files
+mkdir -p web/sites/default/files/media-icons
+mkdir -p web/sites/default/files/media-icons/generic
+mkdir -p web/sites/default/files/php
+mkdir -p web/sites/default/files/css
+mkdir -p web/sites/default/files/js
+mkdir -p private
+
 chown -R www-data:www-data web/sites/default/files private
-chmod -R 775 web/sites/default/files private
+chmod -R 777 web/sites/default/files private
 
 if [ ! -f web/sites/default/settings.php ]; then
   log "Creating settings.php..."
