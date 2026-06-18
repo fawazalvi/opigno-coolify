@@ -43,7 +43,7 @@ RUN apt-get update && apt-get install -y \
         -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' \
         /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf \
     && rm -rf /var/lib/apt/lists/*
-
+    
 COPY php.ini /usr/local/etc/php/conf.d/opigno.ini
 
 RUN curl -sS https://getcomposer.org/installer | php -- \
