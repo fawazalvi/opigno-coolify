@@ -99,7 +99,9 @@ if [ ! -f /var/www/html/web/sites/default/default.settings.php ]; then
   $json["require"]["furf/jquery-ui-touch-punch"] = "dev-master";
 
   // H5P PHP libraries required by Drupal h5p module.
-  $json["require"]["h5p/h5p-core"] = "^1.26";
+  // Keep h5p-core below 1.28 because 1.28 adds resetHubOrganizationData()
+  // which current Drupal h5p module class does not implement.
+  $json["require"]["h5p/h5p-core"] = ">=1.26 <1.28";
   $json["require"]["h5p/h5p-editor"] = "^1.25";
 
   // These modules exist in Drupal core / create conflict as contrib packages.
