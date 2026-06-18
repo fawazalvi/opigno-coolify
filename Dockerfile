@@ -1,4 +1,5 @@
-FROM php:8.1-apache
+```dockerfile
+FROM php:8.2-apache
 
 ENV COMPOSER_ALLOW_SUPERUSER=1
 ENV COMPOSER_MEMORY_LIMIT=-1
@@ -33,6 +34,8 @@ RUN apt-get update && apt-get install -y \
         soap \
         exif \
     && a2enmod rewrite headers expires \
+    && echo "ServerName localhost" > /etc/apache2/conf-available/servername.conf \
+    && a2enconf servername \
     && sed -ri \
         -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' \
         /etc/apache2/sites-available/*.conf \
@@ -56,3 +59,4 @@ WORKDIR /var/www/html
 ENTRYPOINT ["docker-entrypoint.sh"]
 
 CMD ["apache2-foreground"]
+```
