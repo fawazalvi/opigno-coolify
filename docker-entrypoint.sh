@@ -110,6 +110,34 @@ if [ ! -f /var/www/html/web/sites/default/default.settings.php ]; then
   $json["replace"]["drupal/forum"] = "*";
   $json["replace"]["drupal/history"] = "*";
 
+  // Make sure H5P global interfaces/classes are loaded by Composer.
+  if (!isset($json["autoload"])) {
+    $json["autoload"] = [];
+  }
+
+  if (!isset($json["autoload"]["files"])) {
+    $json["autoload"]["files"] = [];
+  }
+
+  foreach ([
+    "vendor/h5p/h5p-core/h5p.classes.php",
+    "vendor/h5p/h5p-core/h5p-development.class.php",
+    "vendor/h5p/h5p-editor/h5peditor.class.php"
+  ] as $fileToAutoload) {
+    if (!in_array($fileToAutoload, $json["autoload"]["files"], true)) {
+      $json["autoload"]["files"][] = $fileToAutoload;
+    }
+  }
+
+  // Ensure these libraries are not accidentally marked as replaced.
+  if (isset($json["replace"]["h5p/h5p-core"])) {
+    unset($json["replace"]["h5p/h5p-core"]);
+  }
+
+  if (isset($json["replace"]["h5p/h5p-editor"])) {
+    unset($json["replace"]["h5p/h5p-editor"]);
+  }
+
   // Opigno 3.2.7 has alpha and dev/master dependencies.
   $json["minimum-stability"] = "dev";
   $json["prefer-stable"] = true;
@@ -139,9 +167,14 @@ if [ ! -f /var/www/html/web/sites/default/default.settings.php ]; then
     }
   }
 
+  echo "autoload files:\n";
+  foreach (($json["autoload"]["files"] ?? []) as $file) {
+    echo "  $file\n";
+  }
+
   echo "replace:\n";
   foreach (($json["replace"] ?? []) as $k => $v) {
-    if (str_contains($k, "drupal/")) {
+    if (str_contains($k, "drupal/") || str_contains($k, "h5p/")) {
       echo "  $k: $v\n";
     }
   }
@@ -155,6 +188,22 @@ if [ ! -f /var/www/html/web/sites/default/default.settings.php ]; then
     --no-security-blocking \
     -vvv 2>&1 | tee -a "$LOG_FILE"
 
+  log "Regenerating optimized Composer autoload files..."
+
+  composer dump-autoload -o 2>&1 | tee -a "$LOG_FILE"
+
+  log "Verifying H5PFrameworkInterface availability..."
+
+  php -r '
+  require "vendor/autoload.php";
+  if (interface_exists("H5PFrameworkInterface")) {
+    echo "H5PFrameworkInterface loaded successfully.\n";
+    exit(0);
+  }
+  echo "ERROR: H5PFrameworkInterface still not available.\n";
+  exit(1);
+  ' 2>&1 | tee -a "$LOG_FILE"
+
   log "Checking Drush availability..."
 
   if [ ! -x /tmp/opigno/vendor/bin/drush ]; then
@@ -165,6 +214,8 @@ if [ ! -f /var/www/html/web/sites/default/default.settings.php ]; then
       --no-interaction \
       --no-security-blocking \
       -vvv 2>&1 | tee -a "$LOG_FILE"
+
+    composer dump-autoload -o 2>&1 | tee -a "$LOG_FILE"
   else
     log "Drush already available."
   fi
