@@ -206,8 +206,11 @@ log "PostgreSQL is accepting connections."
 if [ ! -f web/sites/default/files/.opigno_installed ]; then
   log "Installing Opigno LMS site into database..."
 
+  ENC_DB_USER="$(php -r 'echo rawurlencode(getenv("DB_USER"));')"
+  ENC_DB_PASS="$(php -r 'echo rawurlencode(getenv("DB_PASS"));')"
+
   vendor/bin/drush site:install opigno_lms \
-    --db-url="pgsql://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}" \
+    --db-url="pgsql://${ENC_DB_USER}:${ENC_DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}" \
     --account-name="${ADMIN_USER}" \
     --account-pass="${ADMIN_PASS}" \
     --account-mail="${ADMIN_EMAIL}" \
