@@ -520,3 +520,4 @@ log "Starting Apache..."
 
 exec "$@"
 ```
+  
