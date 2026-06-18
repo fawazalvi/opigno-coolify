@@ -62,7 +62,9 @@ if [ ! -f /var/www/html/web/sites/default/default.settings.php ]; then
   log "Configuring Drupal package repository inside Opigno project..."
 
   composer config repositories.drupal composer https://packages.drupal.org/8 || true
-  composer config minimum-stability stable || true
+
+  # Opigno requires at least one alpha package: drupal/calendar ^1.0@alpha.
+  composer config minimum-stability alpha || true
   composer config prefer-stable true || true
 
   composer config audit.block-insecure false || true
@@ -91,9 +93,13 @@ if [ ! -f /var/www/html/web/sites/default/default.settings.php ]; then
   // Opigno 3.2.7 is Drupal 10 based.
   $json["require"]["opigno/opigno_lms"] = "~3.2.0";
 
-  // These modules exist in Drupal 10 core.
-  // This prevents Composer from downloading contrib drupal/forum and drupal/history,
-  // which causes Drupal 8/9/11 resolution conflicts.
+  // Opigno requires alpha calendar package.
+  $json["require"]["drupal/calendar"] = "^1.0@alpha";
+
+  // Keep Drupal color as contrib because Opigno requires it.
+  $json["require"]["drupal/color"] = "^1.0";
+
+  // These modules exist in Drupal core / create conflict as contrib packages.
   if (!isset($json["replace"])) {
     $json["replace"] = [];
   }
@@ -101,8 +107,9 @@ if [ ! -f /var/www/html/web/sites/default/default.settings.php ]; then
   $json["replace"]["drupal/forum"] = "*";
   $json["replace"]["drupal/history"] = "*";
 
-  // Keep Drupal color as contrib because Opigno requires it.
-  $json["require"]["drupal/color"] = "^1.0";
+  // Allow alpha packages required by Opigno, but prefer stable where available.
+  $json["minimum-stability"] = "alpha";
+  $json["prefer-stable"] = true;
 
   file_put_contents(
     $file,
@@ -113,12 +120,17 @@ if [ ! -f /var/www/html/web/sites/default/default.settings.php ]; then
   log "Current composer.json relevant entries:"
   php -r '
   $json = json_decode(file_get_contents("composer.json"), true);
+
+  echo "minimum-stability: " . ($json["minimum-stability"] ?? "not set") . PHP_EOL;
+  echo "prefer-stable: " . (($json["prefer-stable"] ?? false) ? "true" : "false") . PHP_EOL;
+
   echo "require:\n";
   foreach ($json["require"] as $k => $v) {
     if (str_contains($k, "drupal/") || str_contains($k, "opigno/")) {
       echo "  $k: $v\n";
     }
   }
+
   echo "replace:\n";
   foreach (($json["replace"] ?? []) as $k => $v) {
     if (str_contains($k, "drupal/")) {
